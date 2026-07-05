@@ -3,6 +3,7 @@ import { login, logout, watchAuth } from './firebase.js';
 import {
   subscribeItems, subscribeSecrets, addItem, updateItem, deleteItem,
   addSecret, updateSecret, deleteSecret, setSecretCheck,
+  subscribeMeta, setScratch,
 } from './store.js';
 import { blankItem, parseCapture, todayStr, startOfWeek } from './model.js';
 import { openEditor, toast } from './ui.js';
@@ -22,9 +23,11 @@ const state = {
   weekAnchor: startOfWeek(todayStr()), // 주간 뷰가 보고 있는 주의 월요일
   secretPass: null,                    // 금고 암호 (세션 메모리에만 보관)
   search: { q: '', tags: [] },
+  scratch: '',                         // 오늘 뷰 빠른 메모
 };
 let unsubItems = null;
 let unsubSecrets = null;
+let unsubMeta = null;
 
 const $ = id => document.getElementById(id);
 
@@ -38,6 +41,7 @@ watchAuth(user => {
   $('app').classList.toggle('hidden', !user);
   if (unsubItems) { unsubItems(); unsubItems = null; }
   if (unsubSecrets) { unsubSecrets(); unsubSecrets = null; }
+  if (unsubMeta) { unsubMeta(); unsubMeta = null; }
   if (user) {
     $('user-name').textContent = user.displayName || user.email || '';
     unsubItems = subscribeItems(user.uid, items => { state.items = items; render(); });
@@ -45,10 +49,17 @@ watchAuth(user => {
       state.secrets = secrets;
       if (currentView() === 'secret') render();
     });
+    unsubMeta = subscribeMeta(user.uid, meta => {
+      state.scratch = meta.text || '';
+      // 입력 중 포커스를 뺏지 않도록, 편집 중이 아닐 때만 값을 반영
+      const pad = document.getElementById('scratch-pad');
+      if (pad && document.activeElement !== pad) pad.value = state.scratch;
+    });
   } else {
     state.items = [];
     state.secrets = [];
     state.secretPass = null;
+    state.scratch = '';
   }
 });
 
@@ -78,6 +89,7 @@ function buildCtx() {
     state,
     save: (data, id) => id ? updateItem(uid, id, data) : addItem(uid, { ...blankItem(), ...data }),
     remove: id => deleteItem(uid, id),
+    saveScratch: text => setScratch(uid, text),
     toggleRoutine: it => {
       const t = todayStr();
       const dd = it.doneDates || [];

@@ -48,3 +48,15 @@ export function deleteSecret(uid, id) {
 export function setSecretCheck(uid, data) {
   return setDoc(doc(db, 'users', uid, 'secrets', '_check'), { ...data, updatedAt: now() });
 }
+
+// ===== META (빠른 메모 등 단일 문서) =====
+export function subscribeMeta(uid, cb) {
+  return onSnapshot(
+    doc(db, 'users', uid, 'meta', 'scratch'),
+    snap => cb(snap.exists() ? snap.data() : { text: '' }),
+    err => console.error('meta subscribe error', err)
+  );
+}
+export function setScratch(uid, text) {
+  return setDoc(doc(db, 'users', uid, 'meta', 'scratch'), { text, updatedAt: now() });
+}

@@ -1,5 +1,5 @@
 // ===== SHARED UI HELPERS =====
-import { TYPES, DOW_KO, progressOf } from './model.js';
+import { TYPES, DOW_KO, SCHEDULE, slotLabel, progressOf, normDate, normTime } from './model.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -27,6 +27,27 @@ export function closeModal() {
   document.getElementById('modal-root').innerHTML = '';
 }
 
+// ===== 숫자 마스크 =====
+// data-mask="date"/"time" 입력에 숫자만 받아 구분자를 자동 삽입한다.
+export function bindMasks(root) {
+  root.querySelectorAll('[data-mask]').forEach(el => {
+    el.addEventListener('input', () => {
+      const kind = el.dataset.mask;
+      let d = el.value.replace(/\D/g, '');
+      if (kind === 'time') {
+        d = d.slice(0, 4);
+        el.value = d.length >= 3 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+      } else {
+        d = d.slice(0, 8);
+        let o = d.slice(0, 4);
+        if (d.length > 4) o += '-' + d.slice(4, 6);
+        if (d.length > 6) o += '-' + d.slice(6, 8);
+        el.value = o;
+      }
+    });
+  });
+}
+
 // ===== SMALL PIECES =====
 export const typeBadge = t => `<span class="type-badge type-${esc(t)}">${TYPES[t] || esc(t)}</span>`;
 export const tagChips = (tags, on = []) =>
@@ -45,6 +66,7 @@ export function rowHtml(it, items, opts = {}) {
   const meta = [];
   if (opts.showType) meta.push(typeBadge(it.type));
   if (it.due) meta.push(`<span class="mono">${esc(it.due)}${it.dueTime ? ' ' + esc(it.dueTime) : ''}</span>`);
+  if (it.period) meta.push(esc(slotLabel(it.period)));
   if (it.parentId) {
     const p = items.find(x => x.id === it.parentId);
     if (p) meta.push(esc(p.title));
@@ -114,10 +136,15 @@ export function openEditor(ctx, item) {
       <label>태그 (공백으로 구분)</label>
       <input type="text" name="tags" value="${esc((it.tags || []).join(' '))}">
       <div data-for="task">
-        <label>마감일</label>
-        <input type="date" name="due" value="${esc(it.due || '')}">
-        <label>마감 시각 (선택)</label>
-        <input type="time" name="dueTime" value="${esc(it.dueTime || '')}">
+        <label>마감일 (숫자만 입력, 예: 20260705)</label>
+        <input type="text" name="due" inputmode="numeric" data-mask="date" placeholder="YYYY-MM-DD" value="${esc(it.due || '')}">
+        <label>마감 시각 (선택, 24시간제 예: 1430)</label>
+        <input type="text" name="dueTime" inputmode="numeric" data-mask="time" placeholder="HH:MM" value="${esc(it.dueTime || '')}">
+        <label>교시 배정 (선택)</label>
+        <select name="period">
+          <option value="">미배정</option>
+          ${SCHEDULE.map(s => `<option value="${s.id}"${it.period === s.id ? ' selected' : ''}>${s.label} (${s.start})</option>`).join('')}
+        </select>
         <label>상위 프로젝트</label>
         <select name="parentId">
           <option value="">없음</option>
@@ -125,10 +152,10 @@ export function openEditor(ctx, item) {
         </select>
       </div>
       <div data-for="project">
-        <label>시작일</label>
-        <input type="date" name="start" value="${esc(it.start || '')}">
-        <label>종료일</label>
-        <input type="date" name="end" value="${esc(it.end || '')}">
+        <label>시작일 (숫자만 입력, 예: 20260705)</label>
+        <input type="text" name="start" inputmode="numeric" data-mask="date" placeholder="YYYY-MM-DD" value="${esc(it.start || '')}">
+        <label>종료일 (숫자만 입력)</label>
+        <input type="text" name="end" inputmode="numeric" data-mask="date" placeholder="YYYY-MM-DD" value="${esc(it.end || '')}">
       </div>
       <div data-for="routine">
         <label>반복</label>
@@ -168,6 +195,7 @@ export function openEditor(ctx, item) {
   form.type.addEventListener('change', sync);
   form.repeat.addEventListener('change', sync);
   sync();
+  bindMasks(modal);
 
   modal.querySelector('[data-cancel]').addEventListener('click', closeModal);
   const delBtn = modal.querySelector('[data-del]');
@@ -182,16 +210,22 @@ export function openEditor(ctx, item) {
   form.addEventListener('submit', e => {
     e.preventDefault();
     const f = new FormData(form);
+    // 날짜/시각은 정규화. 입력했는데 형식이 틀리면 저장을 막고 안내한다.
+    const rawDue = f.get('due'), rawStart = f.get('start'), rawEnd = f.get('end'), rawTime = f.get('dueTime');
+    const due = normDate(rawDue), start = normDate(rawStart), end = normDate(rawEnd), dueTime = normTime(rawTime);
+    if ((rawDue && !due) || (rawStart && !start) || (rawEnd && !end)) {
+      toast('날짜는 8자리 숫자(YYYYMMDD)로 입력하세요'); return;
+    }
+    if (rawTime && !dueTime) { toast('시각은 24시간제 HHMM으로 입력하세요'); return; }
     const data = {
       type: f.get('type'),
       title: String(f.get('title')).trim(),
       body: String(f.get('body')),
       tags: [...new Set(String(f.get('tags')).split(/[\s,]+/).map(s => s.replace(/^#/, '')).filter(Boolean))],
-      due: f.get('due') || null,
-      dueTime: f.get('dueTime') || null,
+      due, dueTime,
+      period: f.get('period') || null,
       parentId: f.get('parentId') || null,
-      start: f.get('start') || null,
-      end: f.get('end') || null,
+      start, end,
       repeat: f.get('repeat') || null,
       repeatDays: f.getAll('repeatDays').map(Number),
       important: f.has('important'),
