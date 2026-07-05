@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== WORKNOTE: 로그인한 본인 데이터만 접근 가능 =====
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ===== EDUNOTE (구버전 호환) =====
+    // 기존 edunote 앱은 인증 없이 이 문서를 사용한다.
+    // 누구나 읽고 쓸 수 있는 상태이므로, edunote 사용을 중단하면 이 블록을 삭제할 것.
+    match /edunote/{docId} {
+      allow read, write: if true;
+    }
+
+  }
+}

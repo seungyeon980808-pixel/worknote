@@ -1,0 +1,76 @@
+/* ===== APP FRAME ===== */
+.app { max-width: 860px; margin: 0 auto; padding: 0 12px calc(var(--nav-h) + 8px); }
+.appbar { display: flex; align-items: center; gap: 8px; padding: 12px 2px 8px; }
+.appbar-title { font-weight: 700; font-size: 17px; color: var(--main); flex: 1; }
+.appbar-user { font-size: 13px; color: var(--muted); }
+
+/* ===== CAPTURE BAR ===== */
+.capture { position: sticky; top: 0; z-index: 50; display: flex; gap: 8px; padding: 8px 0; background: var(--bg); }
+.capture input { flex: 1; }
+
+/* ===== NAV ===== */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; height: var(--nav-h);
+  display: flex; background: #fff; border-top: 1px solid var(--line); z-index: 60;
+}
+.nav a { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); }
+.nav a.active { color: var(--main); font-weight: 700; box-shadow: inset 0 2px 0 var(--main); }
+
+/* ===== VIEW / FOOTER ===== */
+.view { padding: 8px 0 8px; }
+.footer { padding: 8px 0 16px; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* ===== LOGIN ===== */
+.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 16px; }
+.login-box {
+  text-align: center; background: #fff;
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 40px 32px; max-width: 340px; width: 100%;
+}
+.login-box h1 { color: var(--main); font-size: 24px; margin-bottom: 6px; }
+.login-box p { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+
+/* ===== TODAY ===== */
+.today-date { font-size: 15px; font-weight: 700; margin: 6px 0 2px; }
+
+/* ===== WEEK ===== */
+.week-head { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
+.week-head .week-range { flex: 1; text-align: center; font-weight: 700; font-size: 13px; }
+.week-days { display: block; }
+.day-col { margin-bottom: 14px; }
+.day-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  padding: 4px 2px; border-bottom: 2px solid var(--line); margin-bottom: 6px;
+}
+.day-head.today { color: var(--main); border-color: var(--main); }
+.day-head .day-add { margin-left: auto; }
+.day-col .row { padding: 7px 10px; font-size: 14px; }
+@media (min-width: 768px) {
+  .week-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .day-col { margin-bottom: 0; min-width: 0; }
+}
+
+/* ===== INBOX ===== */
+.inbox-hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+
+/* ===== SEARCH ===== */
+.search-box { margin-bottom: 10px; }
+.tag-cloud { margin-bottom: 14px; line-height: 2; }
+
+/* ===== SECRET ===== */
+.secret-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.secret-head .section-title { margin: 0; }
+.secret-note { font-size: 13px; color: var(--muted); margin: 8px 0 14px; }
+.lock-card { max-width: 380px; margin: 24px auto; }
+
+/* ===== EDITOR (modal) ===== */
+.dow-row { display: flex; gap: 4px; margin-top: 6px; }
+.dow-row label {
+  flex: 1; text-align: center;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 5px 0; margin: 0; font-size: 13px; cursor: pointer; color: var(--muted);
+}
+.dow-row input { display: none; }
+.dow-row input:checked + span { color: var(--main); font-weight: 700; }
+.prio-row { display: flex; gap: 16px; margin-top: 12px; }
