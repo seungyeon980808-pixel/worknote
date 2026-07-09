@@ -1,5 +1,5 @@
 // ===== SHARED UI HELPERS =====
-import { TYPES, DOW_KO, SCHEDULE, slotLabel, progressOf, normDate, normTime } from './model.js';
+import { TYPES, DOW_KO, SCHEDULE, slotLabel, progressOf, normDate, normTime, blankItem } from './model.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -93,6 +93,14 @@ export function projRow(p, items) {
       <div class="progress"><div class="progress-fill" style="width:${pr.pct}%"></div></div>
     </div>
   </div>`;
+}
+
+// 날짜 헤더의 + 버튼: 그 날짜가 마감일로 미리 채워진 새 할 일 (주간/오늘 공용)
+export function bindDayAdd(container, ctx) {
+  container.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    ctx.openEditor({ ...blankItem('task'), due: b.dataset.add });
+  }));
 }
 
 // 행 이벤트 위임: 체크박스 = 완료 토글, 행 클릭 = 편집기 열기

@@ -1,10 +1,12 @@
-// ===== TODAY VIEW =====
-// 하루 허브: 빠른 메모 · 정보 검색 · 지연 · 교시별 할 일 · 루틴 · 프로젝트 진척.
+// ===== TODAY VIEW (대시보드) =====
+// 데스크톱: 왼쪽=오늘 일정(교시별), 오른쪽=메모·검색·프로젝트·루틴, 하단=주간.
+// 모바일: 위 구역들이 세로로 자연스럽게 쌓인다.
 import {
-  todayStr, fmtHuman, isRoutineOn, isOverdue, taskSort,
+  todayStr, fmtHuman, startOfWeek, isRoutineOn, isOverdue, taskSort,
   SCHEDULE, currentSlot, blankItem,
 } from '../model.js';
-import { rowHtml, projRow, bindRows, esc } from '../ui.js';
+import { rowHtml, projRow, bindRows, bindDayAdd, esc } from '../ui.js';
+import { weekGridHtml } from './week.js';
 
 export function render(el, ctx) {
   const items = ctx.items;
@@ -22,35 +24,48 @@ export function render(el, ctx) {
   el.innerHTML = `
     <div class="today-date">${fmtHuman(today)}</div>
 
-    <div class="section-title">빠른 메모</div>
-    <textarea id="scratch-pad" class="scratch" placeholder="떠오르는 것을 바로 적으세요. 자동 저장됩니다.">${esc(ctx.state.scratch || '')}</textarea>
+    <div class="dash">
+      <!-- ===== LEFT: 오늘 일정 ===== -->
+      <div class="dash-main">
+        ${overdue.length ? `
+          <div class="section-title text-danger">지연됨 <span class="count">${overdue.length}</span></div>
+          ${overdue.map(i => rowHtml(i, items)).join('')}` : ''}
 
-    <div class="section-title">정보 검색</div>
-    <input type="text" id="mini-search" class="mini-search" placeholder="제목 · 내용 · #태그 로 즉시 검색" autocomplete="off">
-    <div id="mini-results"></div>
+        <div class="section-title">교시별 할 일 <span class="count">${doneCount}/${todayTasks.length}</span></div>
+        ${unassigned.length ? `
+          <div class="slot-block">
+            <div class="slot-head"><span>미배정</span></div>
+            ${unassigned.map(t => rowHtml(t, items)).join('')}
+          </div>` : ''}
+        ${SCHEDULE.map(s => slotBlock(s, todayTasks, items, nowSlot)).join('')}
+      </div>
 
-    ${overdue.length ? `
-      <div class="section-title text-danger">지연됨 <span class="count">${overdue.length}</span></div>
-      ${overdue.map(i => rowHtml(i, items)).join('')}` : ''}
+      <!-- ===== RIGHT: 메모 · 검색 · 프로젝트 · 루틴 ===== -->
+      <aside class="dash-side">
+        <div class="section-title">빠른 메모</div>
+        <textarea id="scratch-pad" class="scratch" placeholder="떠오르는 것을 바로 적으세요. 자동 저장됩니다.">${esc(ctx.state.scratch || '')}</textarea>
 
-    <div class="section-title">교시별 할 일 <span class="count">${doneCount}/${todayTasks.length}</span></div>
-    ${unassigned.length ? `
-      <div class="slot-block">
-        <div class="slot-head"><span>미배정</span></div>
-        ${unassigned.map(t => rowHtml(t, items)).join('')}
-      </div>` : ''}
-    ${SCHEDULE.map(s => slotBlock(s, todayTasks, items, nowSlot)).filter(Boolean).join('')}
-    ${todayTasks.length === 0 ? '<div class="empty">오늘 할 일이 없습니다. 위에서 캡처하거나 각 교시의 + 를 누르세요.</div>' : ''}
+        <div class="section-title">정보 검색</div>
+        <input type="text" id="mini-search" class="mini-search" placeholder="제목 · 내용 · #태그 로 즉시 검색" autocomplete="off">
+        <div id="mini-results"></div>
 
-    <div class="section-title">루틴 <span class="count">${routinesDone}/${routines.length}</span></div>
-    ${routines.length
-      ? routines.map(r => rowHtml(r, items, { checked: (r.doneDates || []).includes(today) })).join('')
-      : '<div class="empty">오늘 반복할 루틴이 없습니다</div>'}
+        <div class="section-title">진행 중 프로젝트 <span class="count">${projects.length}</span></div>
+        ${projects.length
+          ? projects.map(p => projRow(p, items)).join('')
+          : '<div class="empty">진행 중인 프로젝트가 없습니다</div>'}
 
-    <div class="section-title">진행 중 프로젝트 <span class="count">${projects.length}</span></div>
-    ${projects.length
-      ? projects.map(p => projRow(p, items)).join('')
-      : '<div class="empty">진행 중인 프로젝트가 없습니다</div>'}
+        <div class="section-title">루틴 <span class="count">${routinesDone}/${routines.length}</span></div>
+        ${routines.length
+          ? routines.map(r => rowHtml(r, items, { checked: (r.doneDates || []).includes(today) })).join('')
+          : '<div class="empty">오늘 반복할 루틴이 없습니다</div>'}
+      </aside>
+
+      <!-- ===== BOTTOM: 주간 일정 ===== -->
+      <section class="dash-week">
+        <div class="section-title">이번 주 일정</div>
+        ${weekGridHtml(startOfWeek(today), items, today)}
+      </section>
+    </div>
   `;
 
   // ── 빠른 메모 자동 저장 (600ms 디바운스) ──
@@ -82,10 +97,11 @@ export function render(el, ctx) {
     ctx.openEditor({ ...blankItem('task'), due: today, period: b.dataset.slotAdd });
   }));
 
+  bindDayAdd(el, ctx);   // 주간 그리드의 날짜별 + 버튼
   bindRows(el, ctx);
 }
 
-// 교시 한 칸. 빈 쉬는시간은 생략, 그 외에는 스켈레톤으로 항상 노출.
+// 교시 한 칸. 스켈레톤으로 항상 노출하고, 현재 교시는 강조한다.
 function slotBlock(s, todayTasks, items, nowSlot) {
   const tasks = todayTasks.filter(t => t.period === s.id).sort(taskSort);
   const isNow = nowSlot && nowSlot.id === s.id;

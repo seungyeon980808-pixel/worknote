@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER (app shell cache) =====
-const CACHE = 'worknote-v1.1.0';
+const CACHE = 'worknote-v1.2.0';
 const ASSETS = [
   './', './index.html', './manifest.json', './icons/icon.svg',
   './css/base.css', './css/layout.css',

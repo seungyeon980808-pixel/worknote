@@ -1,5 +1,5 @@
 /* ===== APP FRAME ===== */
-.app { max-width: 860px; margin: 0 auto; padding: 0 12px calc(var(--nav-h) + 8px); }
+.app { max-width: 1320px; margin: 0 auto; padding: 0 16px calc(var(--nav-h) + 8px); }
 .appbar { display: flex; align-items: center; gap: 8px; padding: 12px 2px 8px; }
 .appbar-title { font-weight: 700; font-size: 17px; color: var(--main); flex: 1; }
 .appbar-user { font-size: 13px; color: var(--muted); }
@@ -11,10 +11,28 @@
 /* ===== NAV ===== */
 .nav {
   position: fixed; left: 0; right: 0; bottom: 0; height: var(--nav-h);
-  display: flex; background: #fff; border-top: 1px solid var(--line); z-index: 60;
+  display: flex; justify-content: center; background: #fff; border-top: 1px solid var(--line); z-index: 60;
 }
-.nav a { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); }
+.nav a { flex: 1; max-width: 200px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); }
 .nav a.active { color: var(--main); font-weight: 700; box-shadow: inset 0 2px 0 var(--main); }
+
+/* ===== DASHBOARD (오늘 뷰) ===== */
+.dash { display: flex; flex-direction: column; gap: 0; }
+.dash-side .section-title:first-child, .dash-main .section-title:first-child { margin-top: 0; }
+.dash-side { margin-top: 18px; }
+.dash-week { margin-top: 18px; }
+@media (min-width: 1024px) {
+  .dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+    grid-template-areas: "main side" "week week";
+    column-gap: 28px;
+    align-items: start;
+  }
+  .dash-main { grid-area: main; }
+  .dash-side { grid-area: side; margin-top: 0; padding-left: 28px; border-left: 1px solid var(--line); }
+  .dash-week { grid-area: week; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+}
 
 /* ===== VIEW / FOOTER ===== */
 .view { padding: 8px 0 8px; }

@@ -1,7 +1,7 @@
 // ===== WEEK VIEW =====
 // 7일 컬럼 + 이 주에 걸친 프로젝트. 모바일은 세로 나열, 데스크톱은 7열 그리드.
-import { todayStr, addDays, startOfWeek, weekDays, dowOf, DOW_KO, taskSort, blankItem } from '../model.js';
-import { rowHtml, projRow, bindRows } from '../ui.js';
+import { todayStr, addDays, startOfWeek, weekDays, dowOf, DOW_KO, taskSort } from '../model.js';
+import { rowHtml, projRow, bindRows, bindDayAdd } from '../ui.js';
 
 export function render(el, ctx) {
   const items = ctx.items;
@@ -23,9 +23,7 @@ export function render(el, ctx) {
     ${projects.length ? `
       <div class="section-title">이 주의 프로젝트 <span class="count">${projects.length}</span></div>
       ${projects.map(p => projRow(p, items)).join('')}` : ''}
-    <div class="week-days">
-      ${days.map(d => dayCol(d, items, today)).join('')}
-    </div>
+    ${weekGridHtml(start, items, today)}
   `;
 
   el.querySelector('[data-prev]').addEventListener('click', () => {
@@ -40,12 +38,14 @@ export function render(el, ctx) {
     ctx.state.weekAnchor = startOfWeek(today);
     ctx.rerender();
   });
-  // 날짜 헤더의 + 버튼: 그 날짜가 마감일로 미리 채워진 새 할 일
-  el.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', e => {
-    e.stopPropagation();
-    ctx.openEditor({ ...blankItem('task'), due: b.dataset.add });
-  }));
+  bindDayAdd(el, ctx);
   bindRows(el, ctx);
+}
+
+// 7일 그리드 HTML. 오늘 뷰 대시보드에서도 재사용한다.
+export function weekGridHtml(startYmd, items, today) {
+  const days = weekDays(startYmd);
+  return `<div class="week-days">${days.map(d => dayCol(d, items, today)).join('')}</div>`;
 }
 
 function dayCol(d, items, today) {
